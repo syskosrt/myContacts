@@ -1,0 +1,14 @@
+# Node
+node_modules/
+package-lock.json
+
+# Environnement
+.env
+
+# IDE
+.idea/
+*.iml
+
+# Autres
+.DS_Store
+
