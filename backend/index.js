@@ -6,11 +6,29 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 
 const app = express();
-app.use(cors()); // CORS ouvert simple
+app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+// Validation et nettoyage de l'URI Mongo
+let rawUri = (process.env.MONGODB_URI || '').trim();
+if (!rawUri) {
+  console.error('MONGODB_URI manquant (variable d\'environnement).');
+} else if (!rawUri.startsWith('mongodb://') && !rawUri.startsWith('mongodb+srv://')) {
+  console.error('MONGODB_URI invalide (schéma attendu mongodb:// ou mongodb+srv://) =>', rawUri);
+}
+// Masquage mot de passe pour log
+function maskMongo(uri) {
+  try {
+    const match = uri.match(/^(mongodb(?:\+srv)?:\/\/)([^:@]+):([^@]+)@(.+)$/);
+    if (match) {
+      return match[1] + match[2] + ':***@' + match[4];
+    }
+    return uri;
+  } catch { return uri; }
+}
+console.log('MONGODB_URI utilisé (masqué):', maskMongo(rawUri || '(vide)'));
+const MONGODB_URI = rawUri || 'mongodb://localhost:27017/test';
 
 // Connexion MongoDB avec timeout et logs détaillés
 mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000 })
