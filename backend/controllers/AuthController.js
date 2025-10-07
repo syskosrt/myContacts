@@ -13,10 +13,11 @@ exports.register = async (req, res) => {
       return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await AuthService.createUser(email, hashedPassword);
+    await AuthService.createUser(email, hashedPassword);
     res.status(201).json({ message: 'Utilisateur créé avec succès.' });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
+    console.error('Register error:', err);
+    return res.status(500).json({ error: 'Erreur serveur.', detail: process.env.DEBUG_ERRORS ? String(err) : undefined });
   }
 };
 
@@ -41,7 +42,7 @@ exports.login = async (req, res) => {
     );
     res.json({ token });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'Erreur serveur.', detail: process.env.DEBUG_ERRORS ? String(err) : undefined });
   }
 };
-
