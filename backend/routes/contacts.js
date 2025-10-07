@@ -1,6 +1,6 @@
 const express = require('express');
-const Contact = require('../models/Contact');
 const requireAuth = require('../middleware/requireAuth');
+const ContactsController = require('../controllers/ContactsController');
 
 const router = express.Router();
 
@@ -58,20 +58,13 @@ const router = express.Router();
 router.use(requireAuth);
 
 // GET /contacts - Liste des contacts de l'utilisateur connecté
-router.get('/', async (req, res) => {
-  try {
-    const contacts = await Contact.find({ user: req.user.userId });
-    res.json(contacts);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
-  }
-});
+router.get('/', ContactsController.getContacts);
 
 /**
  * @swagger
  * /contacts:
  *   post:
- *     summary: Création d'un contact
+ *     summary: Ajouter un contact
  *     tags: [Contacts]
  *     security:
  *       - bearerAuth: []
@@ -103,38 +96,96 @@ router.get('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Contact'
  *       400:
- *         description: Champs requis manquants ou numéro invalide
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Données invalides.
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Token manquant ou invalide.
  *       500:
  *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Erreur serveur.
  */
-// POST /contacts - Création d'un contact
-router.post('/', async (req, res) => {
-  try {
-    const { firstName, lastName, phone } = req.body;
-    if (!firstName || !lastName || !phone) {
-      return res.status(400).json({ error: 'Champs requis manquants.' });
-    }
-    if (phone.length < 10 || phone.length > 20) {
-      return res.status(400).json({ error: 'Le numéro doit faire entre 10 et 20 caractères.' });
-    }
-    const contact = new Contact({
-      firstName,
-      lastName,
-      phone,
-      user: req.user.userId
-    });
-    await contact.save();
-    res.status(201).json(contact);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
-  }
-});
+
+/**
+ * @swagger
+ * /contacts/{id}:
+ *   get:
+ *     summary: Récupérer un contact par son ID
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du contact
+ *     responses:
+ *       200:
+ *         description: Contact trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Contact'
+ *       404:
+ *         description: Contact non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Contact non trouvé.
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Token manquant ou invalide.
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Erreur serveur.
+ */
 
 /**
  * @swagger
  * /contacts/{id}:
  *   patch:
- *     summary: Modification partielle d'un contact
+ *     summary: Modifier un contact
  *     tags: [Contacts]
  *     security:
  *       - bearerAuth: []
@@ -169,38 +220,52 @@ router.post('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Contact'
  *       400:
- *         description: Numéro invalide
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Données invalides.
  *       404:
  *         description: Contact non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Contact non trouvé.
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Token manquant ou invalide.
  *       500:
  *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Erreur serveur.
  */
-// PATCH /contacts/:id - Modification partielle
-router.patch('/:id', async (req, res) => {
-  try {
-    const contact = await Contact.findOne({ _id: req.params.id, user: req.user.userId });
-    if (!contact) {
-      return res.status(404).json({ error: 'Contact non trouvé.' });
-    }
-    const { firstName, lastName, phone } = req.body;
-    if (phone && (phone.length < 10 || phone.length > 20)) {
-      return res.status(400).json({ error: 'Le numéro doit faire entre 10 et 20 caractères.' });
-    }
-    if (firstName !== undefined) contact.firstName = firstName;
-    if (lastName !== undefined) contact.lastName = lastName;
-    if (phone !== undefined) contact.phone = phone;
-    await contact.save();
-    res.json(contact);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
-  }
-});
 
 /**
  * @swagger
  * /contacts/{id}:
  *   delete:
- *     summary: Suppression d'un contact
+ *     summary: Supprimer un contact
  *     tags: [Contacts]
  *     security:
  *       - bearerAuth: []
@@ -224,20 +289,42 @@ router.patch('/:id', async (req, res) => {
  *                   example: Contact supprimé.
  *       404:
  *         description: Contact non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Contact non trouvé.
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Token manquant ou invalide.
  *       500:
  *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Erreur serveur.
  */
 // DELETE /contacts/:id - Suppression
-router.delete('/:id', async (req, res) => {
-  try {
-    const contact = await Contact.findOneAndDelete({ _id: req.params.id, user: req.user.userId });
-    if (!contact) {
-      return res.status(404).json({ error: 'Contact non trouvé.' });
-    }
-    res.json({ message: 'Contact supprimé.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
-  }
-});
+router.delete('/:id', ContactsController.deleteContact);
+
+// POST /contacts - Création d'un contact
+router.post('/', ContactsController.createContact);
+
+// PATCH /contacts/:id - Modification partielle d'un contact
+router.patch('/:id', ContactsController.updateContact);
 
 module.exports = router;

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +13,10 @@
   "dependencies": {
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "mongoose": "^8.18.1"
+    "mongoose": "^8.18.1",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }

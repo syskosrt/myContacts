@@ -1,7 +1,5 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const AuthController = require('../controllers/AuthController');
 
 const router = express.Router();
 
@@ -137,49 +135,9 @@ const router = express.Router();
  */
 
 // Inscription
-router.post('/register', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email et mot de passe requis.' });
-    }
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hashedPassword });
-    await user.save();
-    res.status(201).json({ message: 'Utilisateur créé avec succès.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
-  }
-});
+router.post('/register', AuthController.register);
 
 // Connexion
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email et mot de passe requis.' });
-    }
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ error: 'Identifiants invalides.' });
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Identifiants invalides.' });
-    }
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'dev_secret',
-      { expiresIn: '1d' }
-    );
-    res.json({ token });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur.' });
-  }
-});
+router.post('/login', AuthController.login);
 
 module.exports = router;
