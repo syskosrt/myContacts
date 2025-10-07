@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 export default function Contacts() {
   const [contacts, setContacts] = useState([]);
   const [firstName, setFirstName] = useState('');
@@ -23,7 +25,7 @@ export default function Contacts() {
 
   // Récupérer la liste des contacts
   useEffect(() => {
-    fetch('http://localhost:5000/contacts', {
+    fetch(`${API_BASE}/contacts`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -36,7 +38,7 @@ export default function Contacts() {
     e.preventDefault();
     setError(''); setSuccess('');
     try {
-      const res = await fetch('http://localhost:5000/contacts', {
+      const res = await fetch(`${API_BASE}/contacts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +64,7 @@ export default function Contacts() {
   const handleDelete = async (id) => {
     setError(''); setSuccess('');
     try {
-      const res = await fetch(`http://localhost:5000/contacts/${id}`, {
+      const res = await fetch(`${API_BASE}/contacts/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -90,7 +92,7 @@ export default function Contacts() {
     e.preventDefault();
     setError(''); setSuccess('');
     try {
-      const res = await fetch(`http://localhost:5000/contacts/${editId}`, {
+      const res = await fetch(`${API_BASE}/contacts/${editId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
