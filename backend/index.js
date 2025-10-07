@@ -10,42 +10,6 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Configuration CORS dynamique
-const rawOrigins = process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001';
-const allowAll = process.env.CORS_ALLOW_ALL === 'true';
-const allowedOrigins = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
-console.log('CORS allowed origins:', allowedOrigins, 'allowAll=', allowAll);
-app.use(cors({
-  origin: (origin, callback) => {
-    if (allowAll) return callback(null, true);
-    if (!origin) return callback(null, true); // requêtes internes / tests / same-origin
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    console.warn('Origine refusée CORS:', origin);
-    return callback(null, false);
-  },
-  credentials: true,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  optionsSuccessStatus: 204
-}));
-
-// Handler générique OPTIONS (évite path-to-regexp '*')
-app.options('/:all(.*)', (req, res) => {
-  // Si l'origine a été acceptée par le middleware cors précédent, les en-têtes sont déjà posés
-  // On complète au besoin
-  if (!res.getHeader('Access-Control-Allow-Origin')) {
-    const origin = req.headers.origin;
-    if (allowAll || (origin && allowedOrigins.includes(origin))) {
-      res.header('Access-Control-Allow-Origin', origin || '*');
-      res.header('Vary', 'Origin');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-    }
-  }
-  return res.sendStatus(204);
-});
-
 // Remplacez <MONGODB_URI> par votre URI MongoDB Atlas
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
 
@@ -54,6 +18,8 @@ mongoose.connect(MONGODB_URI)
   .catch((err) => console.error('Erreur de connexion à MongoDB :', err));
 
 app.use(express.json());
+// CORS simplifié (ouvert) pour débloquer rapidement le fonctionnement en prod
+app.use(cors());
 
 // Importation des routes d'authentification
 const authRoutes = require('./routes/auth');
