@@ -11,12 +11,17 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Configuration CORS dynamique
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(',');
+const rawOrigins = process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001';
+const allowAll = process.env.CORS_ALLOW_ALL === 'true';
+const allowedOrigins = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
+console.log('CORS allowed origins:', allowedOrigins, 'allowAll=', allowAll);
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // requêtes internes / tests
+    if (allowAll) return callback(null, true);
+    if (!origin) return callback(null, true); // requêtes internes / tests / same-origin
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Origine non autorisée par CORS: ' + origin));
+    console.warn('Origine refusée CORS:', origin);
+    return callback(null, false); // pas d'entête CORS, le navigateur bloquera
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
